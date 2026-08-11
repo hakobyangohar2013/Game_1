@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Փուչիկների Որս</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+      color: white;
+      text-align: center;
+    }
+
+    #score-board {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .bubble {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 20px 20px, #ff9a9e, #fecfef);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      cursor: pointer;
+      animation: pop 0.3s ease-out forwards;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="score-board">Միավորներ: <span id="score">0</span></div>
+
+  <script>
+    let score = 0;
+    const scoreElement = document.getElementById('score');
+
+    // Պատահական գույներ ստանալու ֆունկցիա
+    function getRandomColor() {
+      const colors = [
+        'radial-gradient(circle at 20px 20px, #ff9a9e, #fecfef)',
+        'radial-gradient(circle at 20px 20px, #a1c4fd, #c2e9fb)',
+        'radial-gradient(circle at 20px 20px, #84fab0, #8fd3f4)',
+        'radial-gradient(circle at 20px 20px, #fccb90, #d7d2cc)'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Փուչիկ ստեղծելու ֆունկցիա
+    function createBubble() {
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      
+      // Պատահական դիրք էկրանի վրա
+      const x = Math.random() * (window.innerWidth - 70);
+      const y = Math.random() * (window.innerHeight - 150) + 70;
+      
+      bubble.style.left = x + 'px';
+      bubble.style.top = y + 'px';
+      bubble.style.background = getRandomColor();
+
+      // Սեղմելու (տապ անելու) իրադարձությունը
+      bubble.addEventListener('click', function() {
+        score += 1;
+        scoreElement.innerText = score;
+        bubble.remove();
+        createBubble(); // Նոր փուչիկ սարքել
+      });
+
+      // Եթե 2 վայրկյանում չսեղմեն, ինքնուրույն անհետանում է ու նորն է գալիս
+      setTimeout(() => {
+        if (bubble.parentElement) {
+          bubble.remove();
+          createBubble();
+        }
+      }, 2000);
+
+      document.body.appendChild(bubble);
+    }
+
+    // Սկսել խաղը առաջին փուչիկով
+    createBubble();
+  </script>
+
+</body>
+</html>
