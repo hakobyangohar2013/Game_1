@@ -45,24 +45,28 @@
         /* Կառավարման Կոճակներ Հեռախոսի Համար */
         .touch-btn {
             position: absolute;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 24px;
+            font-size: 26px;
             color: white;
             z-index: 10;
             touch-action: manipulation;
         }
         .touch-btn:active {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.6);
         }
-        #btn-left { bottom: 30px; left: 20px; width: 60px; height: 60px; }
-        #btn-right { bottom: 30px; left: 95px; width: 60px; height: 60px; }
-        #btn-up { bottom: 95px; left: 57px; width: 60px; height: 60px; }
-        #btn-fire { bottom: 45px; right: 30px; width: 75px; height: 75px; background: rgba(255, 77, 77, 0.3); border-color: #ff4d4d; }
+
+        /* Ձախ կողմում՝ Ձախ ու Աջ */
+        #btn-left { bottom: 25px; left: 20px; width: 65px; height: 65px; }
+        #btn-right { bottom: 25px; left: 95px; width: 65px; height: 65px; }
+
+        /* Աջ կողմում՝ Թռչել ու Կրակել */
+        #btn-up { bottom: 25px; right: 100px; width: 65px; height: 65px; }
+        #btn-fire { bottom: 20px; right: 20px; width: 75px; height: 75px; background: rgba(255, 77, 77, 0.35); border-color: #ff4d4d; }
 
         /* Էկրաններ (Game Over / Win) */
         .overlay {
@@ -75,7 +79,7 @@
             align-items: center;
             z-index: 20;
         }
-        .overlay h1 { font-size: 40px; margin-bottom: 10px; }
+        .overlay h1 { font-size: 36px; margin-bottom: 10px; }
         .overlay button {
             padding: 12px 28px;
             font-size: 20px;
@@ -117,19 +121,15 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Էկրանի չափսեր
 canvas.width = 800;
 canvas.height = 450;
 
-// Խաղի փոփոխականներ
 let lives = 3;
 let score = 0;
 let gameOver = false;
 
-// Ստեղնաշարի վերահսկում
 const keys = { left: false, right: false, up: false, fire: false };
 
-// 1. Ֆոնի Աստղեր և Մոլորակներ
 const bgStars = Array.from({ length: 60 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
@@ -141,7 +141,6 @@ const planets = [
     { x: 680, y: 120, r: 45, color: "#2980b9" }
 ];
 
-// 2. Տիեզերագնաց (Խաղացող)
 const player = {
     x: 50,
     y: 300,
@@ -155,7 +154,6 @@ const player = {
     facing: "right"
 };
 
-// 3. Պլատֆորմներ
 const platforms = [
     { x: 0, y: 400, w: 200, h: 20 },
     { x: 240, y: 340, w: 120, h: 15 },
@@ -166,7 +164,6 @@ const platforms = [
     { x: 520, y: 360, w: 200, h: 20 }
 ];
 
-// 4. Աստղեր (15 հատ)
 let stars = [];
 function spawnStars() {
     stars = [];
@@ -180,7 +177,6 @@ function spawnStars() {
     positions.forEach(p => stars.push({ x: p.x, y: p.y, collected: false }));
 }
 
-// 5. Այլմոլորակայիններ (Կանաչ)
 let aliens = [];
 function spawnAliens() {
     aliens = [
@@ -190,12 +186,9 @@ function spawnAliens() {
     ];
 }
 
-// 6. Խնձորներ (Փամփուշտներ)
 let apples = [];
 
-// Կառավարում (Touch + Keyboard)
 function setupControls() {
-    // Ստեղնաշար
     window.addEventListener("keydown", e => {
         if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = true;
         if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = true;
@@ -208,7 +201,6 @@ function setupControls() {
         if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.up = false;
     });
 
-    // Touch Կոճակներ
     const bindTouch = (id, keyName) => {
         const btn = document.getElementById(id);
         btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyName] = true; });
@@ -270,11 +262,9 @@ function resetGame() {
     document.getElementById("lose-screen").classList.add("hidden");
 }
 
-// Խաղի Թարմացման Ցիկլ (Update)
 function update() {
     if (gameOver) return;
 
-    // Շարժում
     if (keys.left) { player.dx = -player.speed; player.facing = "left"; }
     else if (keys.right) { player.dx = player.speed; player.facing = "right"; }
     else { player.dx = 0; }
@@ -284,12 +274,10 @@ function update() {
         player.grounded = false;
     }
 
-    // Ձգողականություն
     player.dy += 0.45;
     player.x += player.dx;
     player.y += player.dy;
 
-    // Բախում Պլատֆորմների հետ
     player.grounded = false;
     platforms.forEach(p => {
         if (player.x < p.x + p.w &&
@@ -303,143 +291,22 @@ function update() {
         }
     });
 
-    // Ընկնելու ստուգում
     if (player.y > canvas.height + 50) {
         takeDamage();
     }
 
-    // Խնձորների շարժում & Բախում այլմոլորակայինների հետ
     for (let i = apples.length - 1; i >= 0; i--) {
         let app = apples[i];
         app.x += app.dx;
 
-        // Էկրանից դուրս
         if (app.x < 0 || app.x > canvas.width) {
             apples.splice(i, 1);
             continue;
         }
 
-        // Կրակոց այլմոլորակայինի վրա
         for (let j = aliens.length - 1; j >= 0; j--) {
             let al = aliens[j];
             if (app.x > al.x && app.x < al.x + al.w && app.y > al.y && app.y < al.y + al.h) {
                 aliens.splice(j, 1);
                 apples.splice(i, 1);
                 break;
-            }
-        }
-    }
-
-    // Այլմոլորակայինների շարժում & Բախում խաղացողի հետ
-    aliens.forEach(al => {
-        al.x += al.speed;
-        if (al.x < al.minX || al.x + al.w > al.maxX) al.speed *= -1;
-
-        // Բախում տիեզերագնացի հետ
-        if (player.x < al.x + al.w &&
-            player.x + player.width > al.x &&
-            player.y < al.y + al.h &&
-            player.y + player.height > al.y) {
-            takeDamage();
-        }
-    });
-
-    // Աստղեր հավաքել
-    stars.forEach(s => {
-        if (!s.collected &&
-            player.x < s.x + 15 &&
-            player.x + player.width > s.x - 15 &&
-            player.y < s.y + 15 &&
-            player.y + player.height > s.y - 15) {
-            s.collected = true;
-            score++;
-            updateUI();
-            if (score >= 15) {
-                gameOver = true;
-                document.getElementById("win-screen").classList.remove("hidden");
-            }
-        }
-    });
-}
-
-// Նկարչություն (Render)
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 1. Աստղեր ու Մոլորակներ հետևում
-    ctx.fillStyle = "#ffffff";
-    bgStars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
-
-    planets.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    // 2. Պլատֆորմներ
-    ctx.fillStyle = "#4a4e69";
-    platforms.forEach(p => {
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = "#9a8c98";
-        ctx.fillRect(p.x, p.y, p.w, 4); // վերևի գիծը
-        ctx.fillStyle = "#4a4e69";
-    });
-
-    // 3. Աստղեր (⭐)
-    stars.forEach(s => {
-        if (!s.collected) {
-            ctx.fillStyle = "#ffd700";
-            ctx.font = "16px Arial";
-            ctx.fillText("⭐", s.x - 8, s.y + 6);
-        }
-    });
-
-    // 4. Այլմոլորակայիններ (Կանաչ)
-    ctx.fillStyle = "#2ecc71";
-    aliens.forEach(al => {
-        ctx.fillRect(al.x, al.y, al.w, al.h);
-        // Աչքեր
-        ctx.fillStyle = "#000";
-        ctx.fillRect(al.x + 4, al.y + 4, 4, 4);
-        ctx.fillRect(al.x + 16, al.y + 4, 4, 4);
-        ctx.fillStyle = "#2ecc71";
-    });
-
-    // 5. Խնձորներ (🍎)
-    apples.forEach(app => {
-        ctx.fillStyle = "#ff4d4d";
-        ctx.beginPath();
-        ctx.arc(app.x, app.y, app.r, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    // 6. Տիեզերագնաց (Սպիտակ)
-    ctx.fillStyle = "#ffffff"; // Սպիտակ կոստյում
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    // Սաղավարտի ապակի (Կապույտ)
-    ctx.fillStyle = "#3498db";
-    if (player.facing === "right") {
-        ctx.fillRect(player.x + 12, player.y + 4, 10, 10);
-    } else {
-        ctx.fillRect(player.x + 4, player.y + 4, 10, 10);
-    }
-}
-
-// Խաղի գլխավոր ցիկլ
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
-
-// Մեկնարկ
-spawnStars();
-spawnAliens();
-setupControls();
-gameLoop();
-</script>
-
-</body>
-</html>
