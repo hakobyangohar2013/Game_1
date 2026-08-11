@@ -1,99 +1,445 @@
 <!DOCTYPE html>
 <html lang="hy">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Փուչիկների Որս</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden;
-      touch-action: manipulation;
-      color: white;
-      text-align: center;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Տիեզերագնացի Ակադեմիա</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050510;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            background: #0b0b1a;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        /* UI Ցուցիչներ */
+        .ui-panel {
+            position: absolute;
+            top: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 10;
+        }
+        #hearts-panel { left: 20px; color: #ff4d4d; }
+        #stars-panel { right: 20px; color: #ffd700; }
 
-    #score-board {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 20px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
+        /* Կառավարման Կոճակներ Հեռախոսի Համար */
+        .touch-btn {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            z-index: 10;
+            touch-action: manipulation;
+        }
+        .touch-btn:active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        #btn-left { bottom: 30px; left: 20px; width: 60px; height: 60px; }
+        #btn-right { bottom: 30px; left: 95px; width: 60px; height: 60px; }
+        #btn-up { bottom: 95px; left: 57px; width: 60px; height: 60px; }
+        #btn-fire { bottom: 45px; right: 30px; width: 75px; height: 75px; background: rgba(255, 77, 77, 0.3); border-color: #ff4d4d; }
 
-    .bubble {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 20px 20px, #ff9a9e, #fecfef);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-      cursor: pointer;
-      animation: pop 0.3s ease-out forwards;
-    }
-
-    @keyframes pop {
-      0% { transform: scale(0); }
-      100% { transform: scale(1); }
-    }
-  </style>
+        /* Էկրաններ (Game Over / Win) */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        .overlay h1 { font-size: 40px; margin-bottom: 10px; }
+        .overlay button {
+            padding: 12px 28px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
 
-  <div id="score-board">Միավորներ: <span id="score">0</span></div>
+<div id="game-container">
+    <canvas id="canvas"></canvas>
 
-  <script>
-    let score = 0;
-    const scoreElement = document.getElementById('score');
+    <div id="hearts-panel" class="ui-panel">❤️❤️❤️</div>
+    <div id="stars-panel" class="ui-panel">⭐ 0 / 15</div>
 
-    // Պատահական գույներ ստանալու ֆունկցիա
-    function getRandomColor() {
-      const colors = [
-        'radial-gradient(circle at 20px 20px, #ff9a9e, #fecfef)',
-        'radial-gradient(circle at 20px 20px, #a1c4fd, #c2e9fb)',
-        'radial-gradient(circle at 20px 20px, #84fab0, #8fd3f4)',
-        'radial-gradient(circle at 20px 20px, #fccb90, #d7d2cc)'
-      ];
-      return colors[Math.floor(Math.random() * colors.length)];
+    <div id="btn-left" class="touch-btn">◄</div>
+    <div id="btn-right" class="touch-btn">►</div>
+    <div id="btn-up" class="touch-btn">▲</div>
+    <div id="btn-fire" class="touch-btn">🍎</div>
+
+    <div id="win-screen" class="overlay hidden">
+        <h1 style="color: #4CAF50;">ՀԱՂԹԱՆԱԿ: 🎉</h1>
+        <p>Դու հավաքեցիր բոլոր 15 աստղերը։</p>
+        <button onclick="resetGame()">Խաղալ Կրկին</button>
+    </div>
+    <div id="lose-screen" class="overlay hidden">
+        <h1 style="color: #ff4d4d;">ՊԱՐՏՈՒԹՅՈՒՆ 💔</h1>
+        <p>Այլմոլորակայինները հաղթեցին... </p>
+        <button onclick="resetGame()">Փորձել Կրկին</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+// Էկրանի չափսեր
+canvas.width = 800;
+canvas.height = 450;
+
+// Խաղի փոփոխականներ
+let lives = 3;
+let score = 0;
+let gameOver = false;
+
+// Ստեղնաշարի վերահսկում
+const keys = { left: false, right: false, up: false, fire: false };
+
+// 1. Ֆոնի Աստղեր և Մոլորակներ
+const bgStars = Array.from({ length: 60 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    size: Math.random() * 2 + 1
+}));
+
+const planets = [
+    { x: 100, y: 80, r: 30, color: "#e67e22" },
+    { x: 680, y: 120, r: 45, color: "#2980b9" }
+];
+
+// 2. Տիեզերագնաց (Խաղացող)
+const player = {
+    x: 50,
+    y: 300,
+    width: 26,
+    height: 36,
+    dx: 0,
+    dy: 0,
+    speed: 3.5,
+    jumpForce: -10,
+    grounded: false,
+    facing: "right"
+};
+
+// 3. Պլատֆորմներ
+const platforms = [
+    { x: 0, y: 400, w: 200, h: 20 },
+    { x: 240, y: 340, w: 120, h: 15 },
+    { x: 400, y: 280, w: 140, h: 15 },
+    { x: 180, y: 210, w: 110, h: 15 },
+    { x: 340, y: 150, w: 130, h: 15 },
+    { x: 580, y: 220, w: 150, h: 15 },
+    { x: 520, y: 360, w: 200, h: 20 }
+];
+
+// 4. Աստղեր (15 հատ)
+let stars = [];
+function spawnStars() {
+    stars = [];
+    const positions = [
+        {x: 60, y: 360}, {x: 130, y: 360}, {x: 270, y: 300},
+        {x: 310, y: 300}, {x: 430, y: 240}, {x: 480, y: 240},
+        {x: 210, y: 170}, {x: 250, y: 170}, {x: 370, y: 110},
+        {x: 420, y: 110}, {x: 610, y: 180}, {x: 670, y: 180},
+        {x: 560, y: 320}, {x: 620, y: 320}, {x: 670, y: 320}
+    ];
+    positions.forEach(p => stars.push({ x: p.x, y: p.y, collected: false }));
+}
+
+// 5. Այլմոլորակայիններ (Կանաչ)
+let aliens = [];
+function spawnAliens() {
+    aliens = [
+        { x: 260, y: 310, w: 24, h: 24, minX: 240, maxX: 330, speed: 1 },
+        { x: 420, y: 250, w: 24, h: 24, minX: 400, maxX: 510, speed: 1.5 },
+        { x: 550, y: 330, w: 24, h: 24, minX: 520, maxX: 680, speed: 1.2 }
+    ];
+}
+
+// 6. Խնձորներ (Փամփուշտներ)
+let apples = [];
+
+// Կառավարում (Touch + Keyboard)
+function setupControls() {
+    // Ստեղնաշար
+    window.addEventListener("keydown", e => {
+        if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = true;
+        if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = true;
+        if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.up = true;
+        if (e.code === "KeyF" || e.code === "KeyK") shootApple();
+    });
+    window.addEventListener("keyup", e => {
+        if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = false;
+        if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = false;
+        if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.up = false;
+    });
+
+    // Touch Կոճակներ
+    const bindTouch = (id, keyName) => {
+        const btn = document.getElementById(id);
+        btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyName] = true; });
+        btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyName] = false; });
+    };
+    bindTouch("btn-left", "left");
+    bindTouch("btn-right", "right");
+    bindTouch("btn-up", "up");
+
+    document.getElementById("btn-fire").addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        shootApple();
+    });
+}
+
+function shootApple() {
+    if (gameOver) return;
+    apples.push({
+        x: player.x + player.width / 2,
+        y: player.y + player.height / 2,
+        dx: player.facing === "right" ? 6 : -6,
+        r: 6
+    });
+}
+
+function resetPlayer() {
+    player.x = 50;
+    player.y = 300;
+    player.dx = 0;
+    player.dy = 0;
+}
+
+function takeDamage() {
+    lives--;
+    updateUI();
+    if (lives <= 0) {
+        gameOver = true;
+        document.getElementById("lose-screen").classList.remove("hidden");
+    } else {
+        resetPlayer();
+    }
+}
+
+function updateUI() {
+    document.getElementById("hearts-panel").innerHTML = "❤️".repeat(Math.max(0, lives));
+    document.getElementById("stars-panel").innerHTML = `⭐ ${score} / 15`;
+}
+
+function resetGame() {
+    lives = 3;
+    score = 0;
+    gameOver = false;
+    resetPlayer();
+    spawnStars();
+    spawnAliens();
+    apples = [];
+    updateUI();
+    document.getElementById("win-screen").classList.add("hidden");
+    document.getElementById("lose-screen").classList.add("hidden");
+}
+
+// Խաղի Թարմացման Ցիկլ (Update)
+function update() {
+    if (gameOver) return;
+
+    // Շարժում
+    if (keys.left) { player.dx = -player.speed; player.facing = "left"; }
+    else if (keys.right) { player.dx = player.speed; player.facing = "right"; }
+    else { player.dx = 0; }
+
+    if (keys.up && player.grounded) {
+        player.dy = player.jumpForce;
+        player.grounded = false;
     }
 
-    // Փուչիկ ստեղծելու ֆունկցիա
-    function createBubble() {
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      
-      // Պատահական դիրք էկրանի վրա
-      const x = Math.random() * (window.innerWidth - 70);
-      const y = Math.random() * (window.innerHeight - 150) + 70;
-      
-      bubble.style.left = x + 'px';
-      bubble.style.top = y + 'px';
-      bubble.style.background = getRandomColor();
+    // Ձգողականություն
+    player.dy += 0.45;
+    player.x += player.dx;
+    player.y += player.dy;
 
-      // Սեղմելու (տապ անելու) իրադարձությունը
-      bubble.addEventListener('click', function() {
-        score += 1;
-        scoreElement.innerText = score;
-        bubble.remove();
-        createBubble(); // Նոր փուչիկ սարքել
-      });
-
-      // Եթե 2 վայրկյանում չսեղմեն, ինքնուրույն անհետանում է ու նորն է գալիս
-      setTimeout(() => {
-        if (bubble.parentElement) {
-          bubble.remove();
-          createBubble();
+    // Բախում Պլատֆորմների հետ
+    player.grounded = false;
+    platforms.forEach(p => {
+        if (player.x < p.x + p.w &&
+            player.x + player.width > p.x &&
+            player.y + player.height >= p.y &&
+            player.y + player.height <= p.y + p.h &&
+            player.dy >= 0) {
+            player.grounded = true;
+            player.dy = 0;
+            player.y = p.y - player.height;
         }
-      }, 2000);
+    });
 
-      document.body.appendChild(bubble);
+    // Ընկնելու ստուգում
+    if (player.y > canvas.height + 50) {
+        takeDamage();
     }
 
-    // Սկսել խաղը առաջին փուչիկով
-    createBubble();
-  </script>
+    // Խնձորների շարժում & Բախում այլմոլորակայինների հետ
+    for (let i = apples.length - 1; i >= 0; i--) {
+        let app = apples[i];
+        app.x += app.dx;
+
+        // Էկրանից դուրս
+        if (app.x < 0 || app.x > canvas.width) {
+            apples.splice(i, 1);
+            continue;
+        }
+
+        // Կրակոց այլմոլորակայինի վրա
+        for (let j = aliens.length - 1; j >= 0; j--) {
+            let al = aliens[j];
+            if (app.x > al.x && app.x < al.x + al.w && app.y > al.y && app.y < al.y + al.h) {
+                aliens.splice(j, 1);
+                apples.splice(i, 1);
+                break;
+            }
+        }
+    }
+
+    // Այլմոլորակայինների շարժում & Բախում խաղացողի հետ
+    aliens.forEach(al => {
+        al.x += al.speed;
+        if (al.x < al.minX || al.x + al.w > al.maxX) al.speed *= -1;
+
+        // Բախում տիեզերագնացի հետ
+        if (player.x < al.x + al.w &&
+            player.x + player.width > al.x &&
+            player.y < al.y + al.h &&
+            player.y + player.height > al.y) {
+            takeDamage();
+        }
+    });
+
+    // Աստղեր հավաքել
+    stars.forEach(s => {
+        if (!s.collected &&
+            player.x < s.x + 15 &&
+            player.x + player.width > s.x - 15 &&
+            player.y < s.y + 15 &&
+            player.y + player.height > s.y - 15) {
+            s.collected = true;
+            score++;
+            updateUI();
+            if (score >= 15) {
+                gameOver = true;
+                document.getElementById("win-screen").classList.remove("hidden");
+            }
+        }
+    });
+}
+
+// Նկարչություն (Render)
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. Աստղեր ու Մոլորակներ հետևում
+    ctx.fillStyle = "#ffffff";
+    bgStars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
+
+    planets.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // 2. Պլատֆորմներ
+    ctx.fillStyle = "#4a4e69";
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = "#9a8c98";
+        ctx.fillRect(p.x, p.y, p.w, 4); // վերևի գիծը
+        ctx.fillStyle = "#4a4e69";
+    });
+
+    // 3. Աստղեր (⭐)
+    stars.forEach(s => {
+        if (!s.collected) {
+            ctx.fillStyle = "#ffd700";
+            ctx.font = "16px Arial";
+            ctx.fillText("⭐", s.x - 8, s.y + 6);
+        }
+    });
+
+    // 4. Այլմոլորակայիններ (Կանաչ)
+    ctx.fillStyle = "#2ecc71";
+    aliens.forEach(al => {
+        ctx.fillRect(al.x, al.y, al.w, al.h);
+        // Աչքեր
+        ctx.fillStyle = "#000";
+        ctx.fillRect(al.x + 4, al.y + 4, 4, 4);
+        ctx.fillRect(al.x + 16, al.y + 4, 4, 4);
+        ctx.fillStyle = "#2ecc71";
+    });
+
+    // 5. Խնձորներ (🍎)
+    apples.forEach(app => {
+        ctx.fillStyle = "#ff4d4d";
+        ctx.beginPath();
+        ctx.arc(app.x, app.y, app.r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // 6. Տիեզերագնաց (Սպիտակ)
+    ctx.fillStyle = "#ffffff"; // Սպիտակ կոստյում
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Սաղավարտի ապակի (Կապույտ)
+    ctx.fillStyle = "#3498db";
+    if (player.facing === "right") {
+        ctx.fillRect(player.x + 12, player.y + 4, 10, 10);
+    } else {
+        ctx.fillRect(player.x + 4, player.y + 4, 10, 10);
+    }
+}
+
+// Խաղի գլխավոր ցիկլ
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Մեկնարկ
+spawnStars();
+spawnAliens();
+setupControls();
+gameLoop();
+</script>
 
 </body>
 </html>
